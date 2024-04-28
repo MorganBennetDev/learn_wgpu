@@ -1,5 +1,6 @@
 mod run;
 mod state;
+mod buffer;
 
 use run::run;
 

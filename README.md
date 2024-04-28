@@ -2,4 +2,4 @@ Learning wgpu now since I found out that gfx-hal is deprecated. Following [this 
 
 Variables defined with var can be modified but must specify their type. Variables created with let can have their types inferred, but their value cannot be changed during the shader.
 
-Currently on [part 3](https://sotrh.github.io/learn-wgpu/beginner/tutorial3-pipeline/#what-s-a-pipeline)
+Currently on [part 5](https://sotrh.github.io/learn-wgpu/beginner/tutorial5-textures/#loading-an-image-from-a-file)
