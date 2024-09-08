@@ -3,6 +3,7 @@ mod state;
 mod buffer;
 mod texture;
 mod camera;
+mod instance;
 
 use run::run;
 
