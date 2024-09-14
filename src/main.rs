@@ -5,6 +5,7 @@ mod camera;
 mod instance;
 mod model;
 mod resources;
+mod light;
 
 use run::run;
 
