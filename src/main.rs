@@ -1,9 +1,10 @@
 mod run;
 mod state;
-mod buffer;
 mod texture;
 mod camera;
 mod instance;
+mod model;
+mod resources;
 
 use run::run;
 
