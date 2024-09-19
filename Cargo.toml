@@ -9,6 +9,7 @@ bytemuck = { version = "1.16", features = [ "derive" ] }
 cfg-if = "1"
 cgmath = "0.18"
 env_logger = "0.10"
+instant = "0.1"
 pollster = "0.3"
 log = "0.4"
 tobj = { version = "3.2", default-features = false, features = ["async"]}
@@ -26,9 +27,10 @@ fs_extra = "1.2"
 glob = "0.3"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-reqwest = { version = "0.11" }
 console_error_panic_hook = "0.1"
 console_log = "1.0"
+instant = { version = "0.1", features = [ "wasm-bindgen" ] }
+reqwest = { version = "0.11" }
 wgpu = { version = "22.0", features = ["webgl"]}
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
