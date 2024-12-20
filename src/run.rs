@@ -49,7 +49,7 @@ pub async fn run() {
                 event: DeviceEvent::MouseMotion{ delta, },
                 .. // We're not using device_id currently
             } => if state.mouse_pressed {
-                state.camera_controller.process_mouse(delta.0, delta.1)
+                state.renderer.camera_controller.process_mouse(delta.0, delta.1)
             }
             // UPDATED!
             Event::WindowEvent {
@@ -69,7 +69,7 @@ pub async fn run() {
                         ..
                     } => control_flow.exit(),
                     WindowEvent::Resized(physical_size) => {
-                        state.resize(*physical_size);
+                        state.renderer.resize(*physical_size);
                     }
                     // UPDATED!
                     WindowEvent::RedrawRequested => {
@@ -77,11 +77,11 @@ pub async fn run() {
                         let now = instant::Instant::now();
                         let dt = now - last_render_time;
                         last_render_time = now;
-                        state.update(dt);
-                        match state.render() {
+                        state.renderer.update(dt);
+                        match state.renderer.render() {
                             Ok(_) => {}
                             // Reconfigure the surface if it's lost or outdated
-                            Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => state.resize(state.size),
+                            Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => state.renderer.resize(state.renderer.size),
                             // The system is out of memory, we should probably quit
                             Err(wgpu::SurfaceError::OutOfMemory) => control_flow.exit(),
                             // We're ignoring timeouts

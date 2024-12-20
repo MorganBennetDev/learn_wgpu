@@ -6,6 +6,7 @@ mod instance;
 mod model;
 mod resources;
 mod light;
+mod renderer;
 
 use run::run;
 
