@@ -3,6 +3,7 @@ use crate::instance::{Instance, InstanceRaw};
 use crate::light::LightUniform;
 use crate::model::{DrawModel, Model, ModelVertex, Vertex};
 use crate::resources;
+use crate::compute;
 use crate::{camera::Camera, texture};
 use cgmath::prelude::*;
 use wgpu::util::DeviceExt;
@@ -34,6 +35,7 @@ pub struct Renderer<'a> {
     pub display_pipeline: wgpu::RenderPipeline,
     pub display_bind_group: wgpu::BindGroup,
     pub render_texture: wgpu::Texture,
+    pub compute_shader: compute::Compute
 }
 
 impl<'a> Renderer<'a> {
@@ -422,6 +424,8 @@ impl<'a> Renderer<'a> {
             })
         };
 
+        let compute_shader = compute::Compute::new(&device, config.clone());
+
         Self {
             surface,
             device,
@@ -445,7 +449,8 @@ impl<'a> Renderer<'a> {
             light_render_pipeline,
             display_pipeline,
             display_bind_group,
-            render_texture: display_texture
+            render_texture: display_texture,
+            compute_shader
         }
     }
 
@@ -615,6 +620,35 @@ impl<'a> Renderer<'a> {
 
         self.base_render()?;
 
+        let out_texture_view = self.compute_shader.run(&self.render_texture.create_view(&wgpu::TextureViewDescriptor::default()), &self.device, &self.queue);
+
+        let out_texture_sampler = self.device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
+        let display_bind_group = self.device.create_bind_group(
+            &wgpu::BindGroupDescriptor {
+                layout: &self.display_pipeline.get_bind_group_layout(0),
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&out_texture_view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&out_texture_sampler),
+                    }
+                ],
+                label: Some("display_bind_group"),
+            }
+        );
+
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -643,7 +677,7 @@ impl<'a> Renderer<'a> {
             });
 
             render_pass.set_pipeline(&self.display_pipeline);
-            render_pass.set_bind_group(0, &self.display_bind_group, &[]);
+            render_pass.set_bind_group(0, &display_bind_group, &[]);
             render_pass.draw(0..4, 0..1);
         }
 

@@ -7,6 +7,7 @@ mod model;
 mod resources;
 mod light;
 mod renderer;
+mod compute;
 
 use run::run;
 
