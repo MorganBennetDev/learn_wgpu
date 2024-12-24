@@ -33,7 +33,6 @@ pub struct Renderer<'a> {
     pub light_bind_group: wgpu::BindGroup,
     pub light_render_pipeline: wgpu::RenderPipeline,
     pub display_pipeline: wgpu::RenderPipeline,
-    pub display_bind_group: wgpu::BindGroup,
     pub render_texture: wgpu::Texture,
     pub compute_shader: compute::Compute
 }
@@ -47,7 +46,6 @@ impl<'a> Renderer<'a> {
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
         log::warn!("WGPU setup");
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            #[cfg(not(target_arch = "wasm32"))]
             backends: wgpu::Backends::PRIMARY,
             #[cfg(target_arch = "wasm32")]
             backends: wgpu::Backends::GL,
@@ -319,8 +317,6 @@ impl<'a> Renderer<'a> {
             label: Some("postrender texture"),
             view_formats: &[]
         });
-
-        let render_texture_view = display_texture.create_view(&wgpu::TextureViewDescriptor::default());
         
         let render_texture_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -355,23 +351,6 @@ impl<'a> Renderer<'a> {
             ],
             label: Some("display_bind_group_layout"),
         });
-
-        let display_bind_group = device.create_bind_group(
-            &wgpu::BindGroupDescriptor {
-                layout: &display_bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&render_texture_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&render_texture_sampler),
-                    }
-                ],
-                label: Some("display_bind_group"),
-            }
-        );
 
         let display_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Display Pipeline Layout"),
@@ -448,7 +427,6 @@ impl<'a> Renderer<'a> {
             light_bind_group,
             light_render_pipeline,
             display_pipeline,
-            display_bind_group,
             render_texture: display_texture,
             compute_shader
         }
@@ -520,8 +498,18 @@ impl<'a> Renderer<'a> {
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
-            self.depth_texture =
-                texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
+            self.compute_shader.resize(&self.device, new_size);
+            self.depth_texture = texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
+            self.render_texture = self.device.create_texture(&wgpu::TextureDescriptor {
+                size: wgpu::Extent3d { width: self.config.width, height: self.config.height, depth_or_array_layers: 1 },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: self.config.format,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                label: Some("postrender texture"),
+                view_formats: &[]
+            });
             self.surface.configure(&self.device, &self.config);
             self.projection.resize(new_size.width, new_size.height);
         }
@@ -663,9 +651,9 @@ impl<'a> Renderer<'a> {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
                             a: 1.0,
                         }),
                         store: wgpu::StoreOp::Store,

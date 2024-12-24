@@ -82,6 +82,21 @@ impl Compute {
         };
     }
 
+    pub fn resize(&mut self, device: &wgpu::Device, new_size: winit::dpi::PhysicalSize<u32>) {
+        self.width = new_size.width;
+        self.height = new_size.height;
+        self.texture = device.create_texture(&wgpu::TextureDescriptor {
+            size: wgpu::Extent3d { width: self.width, height: self.height, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::STORAGE_BINDING,
+            label: Some("postrender texture"),
+            view_formats: &[]
+        });
+    }
+
     pub fn run(&mut self, input_view: &wgpu::TextureView, device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::TextureView {
         let output_view = self.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
