@@ -1,10 +1,21 @@
 use std::collections::HashMap;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use wgpu::util::DeviceExt;
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct ComputeParametersUniform {
+    pub time: u32
+}
 
 pub struct Compute {
     pub pipeline: wgpu::ComputePipeline,
     pub texture: wgpu::Texture,
     pub width: u32,
-    pub height: u32
+    pub height: u32,
+    pub parameters_uniform: ComputeParametersUniform,
+    pub parameter_buffer: wgpu::Buffer
 }
 
 const WORKGROUP_SIZE: u32 = 16;
@@ -40,6 +51,17 @@ impl Compute {
                         access: wgpu::StorageTextureAccess::WriteOnly
                     },
                     count: None
+                },
+                // Parameters
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
                 }
             ]
         });
@@ -73,12 +95,24 @@ impl Compute {
             label: Some("postrender texture"),
             view_formats: &[]
         });
+
+        let parameters_uniform = ComputeParametersUniform {
+            time: SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards oh no! This application only supports forward time travel.").as_millis() as u32
+        };
+
+        let parameter_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("compute parameter buffer"),
+            contents: bytemuck::cast_slice(&[parameters_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
         
         return Compute {
             pipeline,
             texture,
             width: config.width,
-            height: config.height
+            height: config.height,
+            parameters_uniform,
+            parameter_buffer
         };
     }
 
@@ -114,8 +148,20 @@ impl Compute {
                     binding: 1,
                     resource: wgpu::BindingResource::TextureView(&output_view),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: self.parameter_buffer.as_entire_binding(),
+                }
             ],
         });
+
+        self.parameters_uniform.time = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards oh no! This application only supports forward time travel.").as_millis() as u32;
+
+        queue.write_buffer(
+            &self.parameter_buffer,
+            0,
+            bytemuck::cast_slice(&[self.parameters_uniform]),
+        );
 
         let mut encoder = device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {

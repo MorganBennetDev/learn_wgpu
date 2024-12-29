@@ -1,5 +1,20 @@
-@group(0) @binding(0) var input_texture: texture_2d<f32>;
-@group(0) @binding(1) var output_texture: texture_storage_2d<rgba8unorm, write>;
+@group(0) @binding(0)
+var input_texture: texture_2d<f32>;
+@group(0) @binding(1)
+var output_texture: texture_storage_2d<rgba8unorm, write>;
+struct ComputeParameters {
+    time: u32
+}
+@group(0) @binding(2)
+var<uniform> parameters: ComputeParameters;
+
+fn scan_filter(color: vec4<f32>, coords: vec2<u32>, tex_coords: vec2<f32>) -> vec4<f32> {
+    let line_tex_coords = f32(parameters.time % 10000) / 10000.0;
+    let line_tex_offset = (tex_coords.y - line_tex_coords) * 50;
+    let line_mag = exp(-(line_tex_offset * line_tex_offset));
+
+    return mix(color, vec4<f32>(1.0, 1.0, 1.0, 1.0), line_mag * line_mag);
+}
 
 const PI = radians(180.0);
 const MASK_SIZE = 5.0;
@@ -67,7 +82,8 @@ fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
 
     let tex_coords = vec2(f32(coords.x) / f32(dimensions.x), f32(coords.y) / f32(dimensions.y));
 
-    let crt = crt_filter(textureLoad(input_texture, coords.xy, 0), coords, tex_coords);
+    let scan = scan_filter(textureLoad(input_texture, coords.xy, 0), coords, tex_coords);
+    let crt = crt_filter(scan, coords, tex_coords);
     let bloom = bloom_filter(crt, coords, tex_coords);
 
     textureStore(output_texture, coords.xy, bloom);
