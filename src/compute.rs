@@ -148,6 +148,7 @@ impl Compute {
                     binding: 1,
                     resource: wgpu::BindingResource::TextureView(&output_view),
                 },
+                // Parameters
                 wgpu::BindGroupEntry {
                     binding: 2,
                     resource: self.parameter_buffer.as_entire_binding(),

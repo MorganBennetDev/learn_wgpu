@@ -1,3 +1,4 @@
+#![feature(random)]
 mod run;
 mod state;
 mod texture;
