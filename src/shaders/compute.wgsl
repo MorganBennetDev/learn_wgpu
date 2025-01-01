@@ -49,7 +49,7 @@ fn random(seed: vec2<u32>) -> f32 {
 
 fn scan_filter(color: vec4<f32>, coords: vec2<u32>, tex_coords: vec2<f32>) -> vec4<f32> {
     let line_tex_coords = f32(parameters.time % 10000) / 10000.0;
-    let line_tex_offset = min(abs(tex_coords.y - line_tex_coords), line_tex_coords + 1.0 - tex_coords.y) * 50;
+    let line_tex_offset = min(min(abs(tex_coords.y - line_tex_coords), line_tex_coords + 1.0 - tex_coords.y), 1.0 - line_tex_coords + tex_coords.y) * 50;
     let line_mag = exp(-(line_tex_offset * line_tex_offset));
     var rng_mag = random(coords);
 
